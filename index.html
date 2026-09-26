@@ -4,240 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Modelo3D</title>
-<meta name="description" content="Editor 3D no navegador: monte modelos com formas básicas e exporte em GLB, STL ou OBJ.">
+<meta name="description" content="Editor 3D no navegador: monte modelos com formas, esculpa, corte e una peças, gere rascunhos com IA a partir de fotos e exporte em GLB, STL ou OBJ.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<style>
-  :root {
-    color-scheme: dark;
-    --bg: #111318;
-    --panel: #171a20;
-    --panel-2: #1e222a;
-    --line: #2a2f38;
-    --line-2: #363c47;
-    --text: #e4e7ec;
-    --muted: #8a93a3;
-    --accent: #f2a33a;
-    --accent-ink: #1b1204;
-    --x: #e5484d;
-    --y: #46a758;
-    --z: #3e7bfa;
-    --danger: #e5484d;
-    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font: 13px/1.45 var(--sans);
-    overflow: hidden;
-  }
-  button, input, select { font: inherit; color: inherit; }
-  button { cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  [hidden] { display: none !important; }
-
-  #app {
-    height: 100%;
-    display: grid;
-    grid-template-columns: 232px minmax(0, 1fr) 272px;
-    grid-template-rows: auto minmax(0, 1fr);
-    grid-template-areas: "top top top" "left view right";
-  }
-
-  /* ---------- barra superior ---------- */
-  header {
-    grid-area: top;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
-    padding: 8px 14px;
-    padding-top: calc(8px + env(safe-area-inset-top, 0px));
-    background: var(--panel);
-    border-bottom: 1px solid var(--line);
-  }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: .01em; margin-right: 6px; }
-  .brand svg { width: 22px; height: 22px; }
-  .brand small { font: 500 11px var(--mono); color: var(--muted); }
-  .sep { width: 1px; height: 22px; background: var(--line); }
-  .group { display: flex; gap: 2px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 2px; }
-  .tbtn {
-    display: inline-flex; align-items: center; gap: 6px;
-    height: 28px; padding: 0 10px;
-    background: transparent; border: 0; border-radius: 5px;
-    color: var(--text);
-  }
-  .tbtn:hover { background: var(--line); }
-  .tbtn:disabled { opacity: .35; cursor: default; background: transparent; }
-  .tbtn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
-  .tbtn svg { width: 16px; height: 16px; flex: none; }
-  .tbtn kbd { font: 500 10px var(--mono); opacity: .6; }
-  .spacer { flex: 1; }
-
-  .menu { position: relative; }
-  .menu > summary { list-style: none; }
-  .menu > summary::-webkit-details-marker { display: none; }
-  .menu-list {
-    position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
-    min-width: 230px; padding: 6px;
-    background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 8px;
-    box-shadow: 0 12px 32px rgba(0,0,0,.45);
-    display: grid; gap: 1px;
-  }
-  .menu-list button {
-    text-align: left; background: none; border: 0; border-radius: 5px; padding: 7px 10px;
-    display: flex; justify-content: space-between; gap: 12px;
-  }
-  .menu-list button:hover { background: var(--line); }
-  .menu-list button span { color: var(--muted); font: 11px var(--mono); }
-  .menu-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
-  .menu-list .cap { font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 10px 2px; }
-
-  /* ---------- painéis ---------- */
-  aside {
-    background: var(--panel);
-    min-height: 0; overflow-y: auto;
-    display: flex; flex-direction: column;
-  }
-  #left { grid-area: left; border-right: 1px solid var(--line); }
-  #right { grid-area: right; border-left: 1px solid var(--line); }
-  aside section { padding: 14px; border-bottom: 1px solid var(--line); }
-  aside section.grow { flex: 1; }
-  h2 {
-    margin: 0 0 10px;
-    font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase;
-    color: var(--muted);
-    display: flex; justify-content: space-between;
-  }
-  h2 output { letter-spacing: 0; text-transform: none; }
-
-  .shapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .shape {
-    display: grid; justify-items: center; gap: 4px;
-    padding: 9px 2px 7px;
-    background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px;
-    font-size: 11px; color: var(--muted);
-  }
-  .shape svg { width: 26px; height: 26px; color: var(--text); }
-  .shape:hover { border-color: var(--accent); color: var(--text); }
-  .shape:hover svg { color: var(--accent); }
-
-  .outliner { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
-  .outliner li { display: flex; align-items: center; border-radius: 5px; }
-  .outliner li:hover { background: var(--panel-2); }
-  .outliner li.sel { background: color-mix(in srgb, var(--accent) 18%, transparent); }
-  .outliner .item {
-    flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
-    padding: 5px 8px; background: none; border: 0; text-align: left;
-  }
-  .outliner .item i { width: 9px; height: 9px; border-radius: 2px; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
-  .outliner .item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .outliner li.off .item span { color: var(--muted); text-decoration: line-through; }
-  .outliner .eye { background: none; border: 0; padding: 4px 8px; color: var(--muted); display: flex; }
-  .outliner .eye:hover { color: var(--text); }
-  .outliner .eye svg { width: 15px; height: 15px; }
-  .empty-note { color: var(--muted); margin: 0; }
-
-  /* ---------- propriedades ---------- */
-  .field { display: grid; gap: 4px; margin-bottom: 12px; }
-  .field > span, .vec > span, .slider > span { font-size: 11.5px; color: var(--muted); }
-  .field input[type="text"] {
-    height: 30px; padding: 0 9px;
-    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
-  }
-  .vec { display: grid; gap: 4px; margin-bottom: 12px; }
-  .vec .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-  .num {
-    display: flex; align-items: center; height: 28px;
-    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
-    overflow: hidden;
-  }
-  .num:focus-within { border-color: var(--accent); }
-  .num b { font: 600 10px var(--mono); padding: 0 5px 0 7px; }
-  .num.x b { color: var(--x); } .num.y b { color: var(--y); } .num.z b { color: var(--z); }
-  .num input {
-    width: 100%; min-width: 0; height: 100%; border: 0; background: none; padding: 0 4px 0 0;
-    font: 12px var(--mono); font-variant-numeric: tabular-nums;
-    -moz-appearance: textfield;
-  }
-  .num input::-webkit-inner-spin-button { opacity: .4; }
-  .num input:focus { outline: none; }
-
-  .mat-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .swatch { position: relative; width: 38px; height: 30px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line-2); flex: none; }
-  .swatch input { position: absolute; inset: -6px; width: 60px; height: 50px; border: 0; padding: 0; cursor: pointer; }
-  .presets { display: flex; flex-wrap: wrap; gap: 5px; }
-  .presets button { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(255,255,255,.12); padding: 0; }
-  .slider { display: grid; grid-template-columns: 82px 1fr 38px; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .slider output { font: 11px var(--mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
-  input[type="range"] { width: 100%; accent-color: var(--accent); }
-  .check { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--muted); font-size: 12px; }
-  .check input { accent-color: var(--accent); }
-
-  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .act {
-    display: flex; align-items: center; justify-content: space-between; gap: 6px;
-    height: 32px; padding: 0 10px;
-    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
-  }
-  .act:hover { border-color: var(--line-2); background: var(--line); }
-  .act kbd { font: 10px var(--mono); color: var(--muted); }
-  .act.danger { color: var(--danger); }
-  .act.danger:hover { border-color: var(--danger); }
-  .act.wide { grid-column: 1 / -1; }
-
-  /* ---------- viewport ---------- */
-  #view { grid-area: view; position: relative; min-height: 0; overflow: hidden; background: var(--bg); }
-  #view canvas { display: block; width: 100%; height: 100%; }
-  .hud {
-    position: absolute; left: 12px; bottom: 12px; right: 12px;
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; justify-content: space-between;
-    pointer-events: none;
-  }
-  .chip {
-    pointer-events: auto;
-    background: rgba(17,19,24,.82); backdrop-filter: blur(6px);
-    border: 1px solid var(--line); border-radius: 7px;
-    padding: 6px 10px; font: 11px var(--mono); color: var(--muted);
-  }
-  details.chip summary { cursor: pointer; color: var(--text); }
-  details.chip dl { display: grid; grid-template-columns: auto auto; gap: 3px 14px; margin: 8px 0 2px; }
-  details.chip dt { color: var(--text); }
-  details.chip dd { margin: 0; }
-  .axes { display: flex; gap: 10px; }
-  .axes b { font-weight: 500; }
-  .axes .x { color: var(--x); } .axes .y { color: var(--y); } .axes .z { color: var(--z); }
-
-  #drop {
-    position: absolute; inset: 10px; border: 2px dashed var(--accent); border-radius: 12px;
-    display: grid; place-items: center; background: rgba(17,19,24,.7);
-    font-size: 15px; pointer-events: none;
-  }
-  #toast {
-    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-    background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-weight: 500;
-    z-index: 50; max-width: calc(100% - 32px);
-  }
-
-  @media (max-width: 860px) {
-    body { overflow: auto; }
-    #app {
-      height: auto;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto 62vh auto auto;
-      grid-template-areas: "top" "view" "right" "left";
-    }
-    #left, #right { border: 0; border-top: 1px solid var(--line); overflow: visible; }
-    .shapes { grid-template-columns: repeat(5, 1fr); }
-    .tbtn .lbl, .tbtn kbd { display: none; }
-    .hud details { display: none; }
-  }
-  @media (max-width: 420px) {
-    .shapes { grid-template-columns: repeat(3, 1fr); }
-  }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
-</style>
+<link rel="stylesheet" href="src/style.css">
 </head>
 <body>
 <div id="app">
@@ -249,7 +20,7 @@
 
     <details class="menu" id="fileMenu">
       <summary class="tbtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         <span class="lbl">Arquivo</span>
       </summary>
       <div class="menu-list">
@@ -269,6 +40,11 @@
       </div>
     </details>
 
+    <button type="button" class="tbtn ai-btn" id="aiOpen" title="Criar um modelo a partir de fotos ou de uma descrição">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" /><path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" /></svg>
+      <span>Criar com IA</span>
+    </button>
+
     <div class="sep"></div>
 
     <div class="group">
@@ -280,7 +56,22 @@
       </button>
     </div>
 
-    <div class="group" role="group" aria-label="Ferramenta">
+    <div class="group" role="group" aria-label="Modo de edição">
+      <button type="button" class="tbtn" data-edit="object" aria-pressed="true" title="Mover, girar e redimensionar peças (1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" /><path d="M4 7.5l8 4.5 8-4.5M12 12v9" /></svg>
+        <span class="lbl">Objeto</span> <kbd>1</kbd>
+      </button>
+      <button type="button" class="tbtn" data-edit="vertex" aria-pressed="false" title="Arrastar os pontos da malha (2)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5 18L12 5l7 13z" /><circle cx="12" cy="5" r="2" fill="currentColor" /><circle cx="5" cy="18" r="2" fill="currentColor" /><circle cx="19" cy="18" r="2" fill="currentColor" /></svg>
+        <span class="lbl">Vértices</span> <kbd>2</kbd>
+      </button>
+      <button type="button" class="tbtn" data-edit="sculpt" aria-pressed="false" title="Esculpir a superfície com pincel (3)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L10 19H5v-5z" /><path d="M12 7l5 5" /></svg>
+        <span class="lbl">Esculpir</span> <kbd>3</kbd>
+      </button>
+    </div>
+
+    <div class="group" role="group" aria-label="Ferramenta" id="toolGroup">
       <button type="button" class="tbtn" data-mode="translate" aria-pressed="true" title="Mover (W)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" /></svg>
         <span class="lbl">Mover</span> <kbd>W</kbd>
@@ -300,13 +91,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8h18M3 16h18M8 3v18M16 3v18" /></svg>
         <span class="lbl">Grade</span> <kbd>G</kbd>
       </button>
-      <button type="button" class="tbtn" id="spaceBtn" aria-pressed="false" title="Eixos do objeto em vez dos eixos do mundo">
+      <button type="button" class="tbtn" id="spaceBtn" aria-pressed="false" title="Usar os eixos da peça em vez dos eixos do mundo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 19L19 5M5 19h8M5 19v-8" /></svg>
         <span class="lbl">Local</span>
       </button>
     </div>
 
-    <div class="spacer"></div>
     <input type="file" id="fileInput" accept=".json,.glb,.gltf,.obj,.stl" hidden>
   </header>
 
@@ -318,11 +108,15 @@
     <section class="grow">
       <h2>Cena <output id="count"></output></h2>
       <ul class="outliner" id="outliner"></ul>
-      <p class="empty-note" id="outlinerEmpty" hidden>A cena está vazia. Escolha uma forma acima para começar.</p>
+      <p class="empty-note" id="outlinerEmpty" hidden>A cena está vazia. Escolha uma forma acima ou use Criar com IA.</p>
     </section>
   </aside>
 
   <main id="view">
+    <div class="banner" id="banner" hidden>
+      <span id="bannerText"></span>
+      <button type="button" class="banner-btn" id="bannerCancel">Cancelar</button>
+    </div>
     <div class="hud">
       <details class="chip">
         <summary>Atalhos</summary>
@@ -330,23 +124,26 @@
           <dt>Arrastar</dt><dd>girar a câmera</dd>
           <dt>Botão direito</dt><dd>deslocar a câmera</dd>
           <dt>Roda</dt><dd>zoom</dd>
+          <dt>1 / 2 / 3</dt><dd>objeto / vértices / esculpir</dd>
           <dt>W / E / R</dt><dd>mover / girar / tamanho</dd>
           <dt>Ctrl+D</dt><dd>duplicar</dd>
           <dt>M</dt><dd>espelhar em X</dd>
           <dt>F</dt><dd>focar seleção</dd>
           <dt>Del</dt><dd>excluir</dd>
           <dt>Ctrl+Z / Y</dt><dd>desfazer / refazer</dd>
+          <dt>Shift</dt><dd>inverte o pincel</dd>
         </dl>
       </details>
-      <div class="chip axes"><b class="x">X</b><b class="y">Y</b><b class="z">Z</b> <span>grade 0,25 m</span></div>
+      <div class="chip axes"><b class="x">X</b><b class="y">Y</b><b class="z">Z</b> <span id="hudInfo">grade 0,25 m</span></div>
     </div>
     <div id="drop" hidden>Solte o arquivo para importar</div>
   </main>
 
   <aside id="right">
-    <section class="grow">
+    <!-- modo objeto -->
+    <section class="grow" id="objectPanel">
       <h2>Propriedades</h2>
-      <p class="empty-note" id="propsEmpty">Nada selecionado. Clique num objeto na cena ou adicione uma forma.</p>
+      <p class="empty-note" id="propsEmpty">Nada selecionado. Clique numa peça na cena ou adicione uma forma.</p>
       <form id="props" hidden autocomplete="off">
         <label class="field"><span>Nome</span><input type="text" id="pName"></label>
 
@@ -372,7 +169,13 @@
           </div>
         </div>
 
-        <h2 style="margin-top:18px">Material</h2>
+        <div id="shapeBox">
+          <h2 class="sub">Forma <output id="shapeKind"></output></h2>
+          <div id="paramBox"></div>
+          <p class="empty-note small" id="paramNote" hidden></p>
+        </div>
+
+        <h2 class="sub">Material</h2>
         <div class="mat-top">
           <label class="swatch" title="Cor"><input type="color" id="pColor"></label>
           <div class="presets" id="presets"></div>
@@ -382,687 +185,129 @@
         <label class="slider"><span>Opacidade</span><input type="range" id="pOpacity" min="0.05" max="1" step="0.01"><output id="oOpacity"></output></label>
         <label class="check"><input type="checkbox" id="pWire"> Mostrar como arame</label>
 
-        <h2 style="margin-top:18px">Ações</h2>
+        <h2 class="sub">Cortar e unir</h2>
+        <div class="bool">
+          <button type="button" class="act" data-csg="subtract" title="Usa outra peça para abrir um buraco nesta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h11v11H3z" /><circle cx="15" cy="15" r="6" stroke-dasharray="2 2" /></svg>Furar
+          </button>
+          <button type="button" class="act" data-csg="union" title="Funde outra peça nesta, virando uma só">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h11v4.5a6 6 0 11-4.5 6.5H3z" /></svg>Unir
+          </button>
+          <button type="button" class="act" data-csg="intersect" title="Mantém só a parte em que as duas peças se sobrepõem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h11v11H3z" stroke-dasharray="2 2" /><circle cx="15" cy="15" r="6" stroke-dasharray="2 2" /><path d="M9.5 10.3A6 6 0 0114 9.1V16H9.1a6 6 0 01.4-5.7z" fill="currentColor" stroke="none" /></svg>Interseção
+          </button>
+        </div>
+        <label class="check"><input type="checkbox" id="csgKeep"> Manter a outra peça depois</label>
+
+        <h2 class="sub">Ações</h2>
         <div class="actions">
           <button type="button" class="act" data-act="duplicate">Duplicar <kbd>Ctrl D</kbd></button>
           <button type="button" class="act" data-act="mirror">Espelhar X <kbd>M</kbd></button>
           <button type="button" class="act" data-act="floor">Pôr no chão</button>
           <button type="button" class="act" data-act="focus">Focar <kbd>F</kbd></button>
-          <button type="button" class="act danger wide" data-act="remove">Excluir objeto <kbd>Del</kbd></button>
+          <button type="button" class="act danger wide" data-act="remove">Excluir peça <kbd>Del</kbd></button>
         </div>
       </form>
     </section>
+
+    <!-- modo vértices -->
+    <section class="grow" id="vertexPanel" hidden>
+      <h2>Vértices <output id="vCount"></output></h2>
+      <p class="lead">Editando <strong id="vName"></strong>. Clique num ponto laranja e arraste as setas para deformar a peça.</p>
+      <label class="slider"><span>Raio suave</span><input type="range" id="vRadius" min="0" max="2" step="0.01" value="0"><output id="oRadius">0 m</output></label>
+      <p class="empty-note small">Com raio acima de zero, os pontos vizinhos acompanham o movimento com intensidade decrescente.</p>
+      <label class="check"><input type="checkbox" id="vMirror"> Espelhar em X</label>
+      <div class="actions" style="margin-top:14px">
+        <button type="button" class="act wide primary" data-exit>Concluir edição <kbd>Esc</kbd></button>
+      </div>
+    </section>
+
+    <!-- modo esculpir -->
+    <section class="grow" id="sculptPanel" hidden>
+      <h2>Esculpir <output id="sTris"></output></h2>
+      <p class="lead">Esculpindo <strong id="sName"></strong>. Pinte sobre a peça; arraste fora dela para girar a câmera.</p>
+      <div class="brushes" id="brushes">
+        <button type="button" class="brush" data-brush="draw" aria-pressed="true">Puxar</button>
+        <button type="button" class="brush" data-brush="dig" aria-pressed="false">Afundar</button>
+        <button type="button" class="brush" data-brush="inflate" aria-pressed="false">Inflar</button>
+        <button type="button" class="brush" data-brush="smooth" aria-pressed="false">Suavizar</button>
+        <button type="button" class="brush" data-brush="flatten" aria-pressed="false">Achatar</button>
+        <button type="button" class="brush" data-brush="pinch" aria-pressed="false">Afinar</button>
+      </div>
+      <label class="slider"><span>Raio</span><input type="range" id="sRadius" min="0.02" max="1.5" step="0.01" value="0.25"><output id="oSRadius"></output></label>
+      <label class="slider"><span>Força</span><input type="range" id="sStrength" min="0.02" max="1" step="0.01" value="0.4"><output id="oSStrength"></output></label>
+      <label class="check"><input type="checkbox" id="sMirror" checked> Espelhar em X</label>
+      <p class="empty-note small">Segure Shift para inverter o pincel.</p>
+      <div class="actions" style="margin-top:14px">
+        <button type="button" class="act wide" id="sDetail">Mais detalhe na malha</button>
+        <button type="button" class="act wide primary" data-exit>Concluir escultura <kbd>Esc</kbd></button>
+      </div>
+    </section>
   </aside>
 </div>
+
+<!-- criar com IA -->
+<dialog id="aiDialog">
+  <form method="dialog" id="aiForm" autocomplete="off">
+    <header class="dlg-head">
+      <h3>Criar com IA</h3>
+      <button type="button" class="icon-btn" id="aiClose" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </header>
+    <p class="lead">Mande fotos de referência e diga o que é. O Claude monta um primeiro modelo com as formas do editor, e você ajusta depois.</p>
+
+    <label class="field"><span>O que você quer modelar</span>
+      <textarea id="aiText" rows="3" placeholder="Ex.: uma cadeira de escritório com rodinhas e encosto alto, preta com detalhes cromados"></textarea>
+    </label>
+
+    <div class="field"><span>Imagens de referência <em>(opcional, até 6)</em></span>
+      <div class="refs" id="aiRefs">
+        <label class="ref-add" id="aiAdd" tabindex="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Adicionar
+          <input type="file" id="aiFiles" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+        </label>
+      </div>
+      <small class="hint">Também dá para arrastar imagens aqui ou colar com Ctrl+V. Fotos de frente, lado e cima ajudam.</small>
+    </div>
+
+    <fieldset class="seg">
+      <legend>O que fazer com a cena atual</legend>
+      <label><input type="radio" name="aiMode" value="new" checked> Começar do zero</label>
+      <label><input type="radio" name="aiMode" value="edit"> Ajustar o modelo atual</label>
+    </fieldset>
+
+    <details class="keybox" id="aiKeyBox">
+      <summary>Chave da API da Anthropic <output id="aiKeyState"></output></summary>
+      <label class="field"><span>Cole aqui a sua chave (começa com sk-ant-)</span>
+        <input type="password" id="aiKey" spellcheck="false" autocomplete="off">
+      </label>
+      <label class="check"><input type="checkbox" id="aiRemember"> Lembrar a chave neste navegador</label>
+      <small class="hint">A chave vai direto do seu navegador para a Anthropic e não passa por nenhum outro servidor. Crie uma em console.anthropic.com. Cada geração costuma custar entre US$ 0,05 e US$ 0,40.</small>
+    </details>
+
+    <div class="ai-status" id="aiStatus" hidden></div>
+
+    <footer class="dlg-foot">
+      <button type="button" class="act" id="aiCancel">Fechar</button>
+      <button type="submit" class="act primary" id="aiGo">Gerar modelo</button>
+    </footer>
+  </form>
+</dialog>
+
 <div id="toast" hidden></div>
 
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+    "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.9.15/src/index.js",
+    "three-bvh-csg": "https://cdn.jsdelivr.net/npm/three-bvh-csg@0.0.18/src/index.js"
   }
 }
 </script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { STLExporter } from 'three/addons/exporters/STLExporter.js';
-import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-import { STLLoader } from 'three/addons/loaders/STLLoader.js';
-
-const $ = (id) => document.getElementById(id);
-const DEG = Math.PI / 180;
-const STORE_KEY = 'modelo3d.cena.v1';
-const PALETTE = ['#f2a33a', '#3e7bfa', '#46a758', '#e5484d', '#a78bfa', '#3fb6a8', '#e6e8ec', '#3b4250', '#c9ced6', '#8b5a2b'];
-
-/* ---------- formas ---------- */
-function plain(g) {
-  // Converte para BufferGeometry simples para que translações "assadas" sobrevivam à serialização.
-  const b = new THREE.BufferGeometry().copy(g);
-  g.dispose();
-  return b;
-}
-function starGeometry() {
-  const s = new THREE.Shape();
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 ? 0.22 : 0.5, a = (i / 10) * Math.PI * 2 + Math.PI / 2;
-    i ? s.lineTo(Math.cos(a) * r, Math.sin(a) * r) : s.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-  }
-  s.closePath();
-  return plain(new THREE.ExtrudeGeometry(s, { depth: 0.2, bevelEnabled: false }).translate(0, 0, -0.1));
-}
-function wedgeGeometry() {
-  const s = new THREE.Shape();
-  s.moveTo(-0.5, -0.5); s.lineTo(0.5, -0.5); s.lineTo(-0.5, 0.5); s.closePath();
-  return plain(new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false }).translate(0, 0, -0.5));
-}
-const tubeProfile = [[0.32, -0.5], [0.5, -0.5], [0.5, 0.5], [0.32, 0.5], [0.32, -0.5]].map(([x, y]) => new THREE.Vector2(x, y));
-
-const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">${d}</svg>`;
-const SHAPES = {
-  cubo:      { label: 'Cubo',      make: () => new THREE.BoxGeometry(1, 1, 1), icon: I('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>') },
-  esfera:    { label: 'Esfera',    make: () => new THREE.SphereGeometry(0.5, 48, 32), icon: I('<circle cx="12" cy="12" r="8.5"/><ellipse cx="12" cy="12" rx="8.5" ry="3"/>') },
-  cilindro:  { label: 'Cilindro',  make: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 48), icon: I('<ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/>') },
-  cone:      { label: 'Cone',      make: () => new THREE.ConeGeometry(0.5, 1, 48), icon: I('<path d="M12 3L5 18M12 3l7 15"/><path d="M5 18c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/>') },
-  piramide:  { label: 'Pirâmide',  make: () => new THREE.ConeGeometry(0.7, 1, 4), icon: I('<path d="M12 3L3.5 17 12 21l8.5-4z"/><path d="M12 3v18"/>') },
-  prisma:    { label: 'Prisma',    make: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 6), icon: I('<path d="M7.5 3.5h9L20 6l-3.5 2.5h-9L4 6z"/><path d="M4 6v12l3.5 2.5h9L20 18V6M7.5 8.5v12M16.5 8.5v12"/>') },
-  toro:      { label: 'Toro',      make: () => new THREE.TorusGeometry(0.4, 0.15, 24, 64), icon: I('<ellipse cx="12" cy="12" rx="9" ry="5.5"/><path d="M8 11.5c2.2 1.6 5.8 1.6 8 0M9 12.6c1.8-1 4.2-1 6 0"/>') },
-  arco:      { label: 'Arco',      make: () => new THREE.TorusGeometry(0.5, 0.12, 20, 48, Math.PI), icon: I('<path d="M3.5 19V13a8.5 8.5 0 0117 0v6"/><path d="M7.5 19V13a4.5 4.5 0 019 0v6"/><path d="M3.5 19h4M16.5 19h4"/>') },
-  capsula:   { label: 'Cápsula',   make: () => new THREE.CapsuleGeometry(0.3, 0.6, 12, 32), icon: I('<rect x="7" y="2.5" width="10" height="19" rx="5"/><path d="M7 12h10"/>') },
-  cupula:    { label: 'Cúpula',    make: () => new THREE.SphereGeometry(0.5, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), icon: I('<path d="M3.5 17a8.5 8.5 0 0117 0"/><ellipse cx="12" cy="17" rx="8.5" ry="2.8"/>') },
-  tubo:      { label: 'Tubo',      make: () => new THREE.LatheGeometry(tubeProfile, 48), icon: I('<ellipse cx="12" cy="6" rx="7" ry="2.6"/><ellipse cx="12" cy="6" rx="3.5" ry="1.2"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/>') },
-  placa:     { label: 'Placa',     make: () => new THREE.BoxGeometry(1, 0.05, 1), icon: I('<path d="M3 13l7-4.5h11L14 13z"/><path d="M3 13v2h11l7-4.5v-2M14 13v2"/>') },
-  cunha:     { label: 'Cunha',     make: wedgeGeometry, icon: I('<path d="M4 19V8l9 4v7zM4 8l7-4 9 8-7 0M13 19l7-7"/>') },
-  estrela:   { label: 'Estrela',   make: starGeometry, icon: I('<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6z"/>') },
-  icosaedro: { label: 'Icosaedro', make: () => new THREE.IcosahedronGeometry(0.55, 0), icon: I('<path d="M12 2.5l8.5 5v9L12 21.5l-8.5-5v-9z"/><path d="M12 7.5l5 8.2H7zM12 2.5v5M3.5 7.5L12 7.5l8.5 0M7 15.7l-3.5.8M17 15.7l3.5.8M7 15.7L12 21.5l5-5.8"/>') },
-};
-
-/* ---------- renderizador e cena ---------- */
-const view = $('view');
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-view.prepend(renderer.domElement);
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x15181e);
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.55;
-
-const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 1000);
-camera.position.set(6.5, 5, 8);
-
-const orbit = new OrbitControls(camera, renderer.domElement);
-orbit.target.set(0, 1.4, 0);
-orbit.enableDamping = true;
-orbit.dampingFactor = 0.12;
-
-scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3f4a, 0.7));
-const sun = new THREE.DirectionalLight(0xffffff, 1.8);
-sun.position.set(6, 12, 7);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 0.5, far: 40 });
-sun.shadow.bias = -0.0004;
-scene.add(sun);
-
-const grid = new THREE.GridHelper(40, 160, 0x353b47, 0x22262e);
-grid.material.transparent = true;
-grid.material.opacity = 0.9;
-scene.add(grid);
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ opacity: 0.3 }));
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
-
-const world = new THREE.Group();
-world.name = 'Cena';
-scene.add(world);
-
-const selBox = new THREE.BoxHelper(undefined, 0xf2a33a);
-selBox.visible = false;
-scene.add(selBox);
-
-const tc = new TransformControls(camera, renderer.domElement);
-const tcHelper = tc.getHelper ? tc.getHelper() : tc;
-scene.add(tcHelper);
-tc.setTranslationSnap(0.25);
-tc.setRotationSnap(15 * DEG);
-tc.setScaleSnap(0.1);
-tc.addEventListener('dragging-changed', (e) => {
-  orbit.enabled = !e.value;
-  if (!e.value) commit();
-});
-tc.addEventListener('objectChange', () => { selBox.update(); fillProps(); });
-
-new ResizeObserver(() => {
-  const w = view.clientWidth, h = view.clientHeight;
-  if (!w || !h) return;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-}).observe(view);
-
-renderer.setAnimationLoop(() => {
-  orbit.update();
-  if (selected) selBox.update();
-  renderer.render(scene, camera);
-});
-
-/* ---------- criação de objetos ---------- */
-let colorIndex = 0;
-function makeMesh(key, o = {}) {
-  const def = SHAPES[key];
-  const geo = def.make();
-  geo.computeBoundingBox();
-  const mat = new THREE.MeshStandardMaterial({
-    color: o.color ?? PALETTE[colorIndex++ % 6],
-    metalness: o.metal ?? 0.05,
-    roughness: o.rough ?? 0.45,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.castShadow = mesh.receiveShadow = true;
-  mesh.name = o.name ?? nextName(def.label);
-  mesh.userData.shape = key;
-  if (o.size) {
-    const base = geo.boundingBox.getSize(new THREE.Vector3());
-    mesh.scale.set(o.size[0] / base.x, o.size[1] / base.y, o.size[2] / base.z);
-  }
-  if (o.rot) mesh.rotation.set(o.rot[0] * DEG, o.rot[1] * DEG, o.rot[2] * DEG);
-  if (o.pos) mesh.position.set(...o.pos);
-  return mesh;
-}
-function nextName(label) {
-  let n = 1;
-  const names = new Set(world.children.map((c) => c.name));
-  while (names.has(`${label} ${n}`)) n++;
-  return `${label} ${n}`;
-}
-function addShape(key) {
-  const mesh = makeMesh(key);
-  const snap = (v) => (snapOn ? Math.round(v / 0.25) * 0.25 : v);
-  mesh.position.set(snap(orbit.target.x), 0, snap(orbit.target.z));
-  world.add(mesh);
-  dropToFloor(mesh);
-  select(mesh);
-  commit();
-}
-function dropToFloor(obj) {
-  obj.updateMatrixWorld(true);
-  const b = new THREE.Box3().setFromObject(obj);
-  if (!b.isEmpty()) obj.position.y -= b.min.y;
-}
-
-function buildExample() {
-  const metal = { color: '#c9ced6', metal: 0.75, rough: 0.28 };
-  const dark = { color: '#3b4250', rough: 0.6 };
-  const parts = [
-    ['cubo', { name: 'Pé esquerdo', size: [0.5, 0.2, 0.7], pos: [-0.35, 0.1, 0.06], ...dark }],
-    ['cubo', { name: 'Pé direito', size: [0.5, 0.2, 0.7], pos: [0.35, 0.1, 0.06], ...dark }],
-    ['cilindro', { name: 'Perna esquerda', size: [0.26, 0.85, 0.26], pos: [-0.35, 0.62, 0], ...metal }],
-    ['cilindro', { name: 'Perna direita', size: [0.26, 0.85, 0.26], pos: [0.35, 0.62, 0], ...metal }],
-    ['cubo', { name: 'Tronco', size: [1.4, 1.2, 0.9], pos: [0, 1.62, 0], color: '#f2a33a', rough: 0.4 }],
-    ['cubo', { name: 'Painel', size: [0.72, 0.42, 0.06], pos: [0, 1.7, 0.46], color: '#23272f', rough: 0.3 }],
-    ['esfera', { name: 'Botão vermelho', size: [0.13, 0.13, 0.13], pos: [-0.16, 1.7, 0.5], color: '#e5484d', rough: 0.25 }],
-    ['esfera', { name: 'Botão verde', size: [0.13, 0.13, 0.13], pos: [0.16, 1.7, 0.5], color: '#46a758', rough: 0.25 }],
-    ['capsula', { name: 'Braço esquerdo', size: [0.26, 1.0, 0.26], pos: [-0.9, 1.55, 0], rot: [0, 0, -10], ...metal }],
-    ['capsula', { name: 'Braço direito', size: [0.26, 1.0, 0.26], pos: [0.9, 1.55, 0], rot: [0, 0, 10], ...metal }],
-    ['toro', { name: 'Garra esquerda', size: [0.34, 0.34, 0.12], pos: [-0.99, 0.95, 0], rot: [0, 90, 0], ...dark }],
-    ['toro', { name: 'Garra direita', size: [0.34, 0.34, 0.12], pos: [0.99, 0.95, 0], rot: [0, 90, 0], ...dark }],
-    ['cilindro', { name: 'Pescoço', size: [0.32, 0.16, 0.32], pos: [0, 2.3, 0], ...metal }],
-    ['cubo', { name: 'Cabeça', size: [0.95, 0.72, 0.78], pos: [0, 2.73, 0], color: '#e6e8ec', rough: 0.35 }],
-    ['esfera', { name: 'Olho esquerdo', size: [0.2, 0.2, 0.12], pos: [-0.21, 2.8, 0.39], color: '#1b1f26', rough: 0.15 }],
-    ['esfera', { name: 'Olho direito', size: [0.2, 0.2, 0.12], pos: [0.21, 2.8, 0.39], color: '#1b1f26', rough: 0.15 }],
-    ['cubo', { name: 'Boca', size: [0.4, 0.06, 0.04], pos: [0, 2.56, 0.4], color: '#3b4250' }],
-    ['cilindro', { name: 'Antena', size: [0.04, 0.42, 0.04], pos: [0, 3.29, 0], ...metal }],
-    ['esfera', { name: 'Ponta da antena', size: [0.15, 0.15, 0.15], pos: [0, 3.53, 0], color: '#e5484d', rough: 0.25 }],
-  ];
-  return parts.map(([k, o]) => makeMesh(k, o));
-}
-
-/* ---------- seleção ---------- */
-let selected = null;
-function select(obj) {
-  selected = obj;
-  if (obj) {
-    tc.attach(obj);
-    selBox.setFromObject(obj);
-    selBox.visible = true;
-  } else {
-    tc.detach();
-    selBox.visible = false;
-  }
-  renderOutliner();
-  fillProps();
-}
-
-const raycaster = new THREE.Raycaster();
-const ndc = new THREE.Vector2();
-let down = null;
-renderer.domElement.addEventListener('pointerdown', (e) => {
-  down = { x: e.clientX, y: e.clientY, gizmo: tc.axis !== null && !!tc.object };
-});
-renderer.domElement.addEventListener('pointerup', (e) => {
-  if (!down) return;
-  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
-  const onGizmo = down.gizmo;
-  down = null;
-  if (moved > 4 || onGizmo || e.button !== 0) return;
-  const r = renderer.domElement.getBoundingClientRect();
-  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-  raycaster.setFromCamera(ndc, camera);
-  const hit = raycaster.intersectObjects(world.children, true).find((h) => isVisible(h.object));
-  select(hit ? topLevel(hit.object) : null);
-});
-function isVisible(o) {
-  for (; o && o !== world; o = o.parent) if (!o.visible) return false;
-  return true;
-}
-function topLevel(o) {
-  while (o.parent && o.parent !== world) o = o.parent;
-  return o;
-}
-
-/* ---------- histórico ---------- */
-let history = [];
-let hIndex = -1;
-const loader = new THREE.ObjectLoader();
-
-function snapshot() { return JSON.stringify(world.toJSON()); }
-function commit() {
-  history = history.slice(0, hIndex + 1);
-  history.push(snapshot());
-  if (history.length > 80) history.shift();
-  hIndex = history.length - 1;
-  persist();
-  renderOutliner();
-  updateUndo();
-}
-function restore(json) {
-  const keep = selected?.uuid;
-  const group = loader.parse(JSON.parse(json));
-  clearWorld();
-  [...group.children].forEach((c) => world.add(c));
-  select(keep ? world.children.find((c) => c.uuid === keep) ?? null : null);
-}
-function undo() { if (hIndex > 0) { restore(history[--hIndex]); persist(); updateUndo(); } }
-function redo() { if (hIndex < history.length - 1) { restore(history[++hIndex]); persist(); updateUndo(); } }
-function updateUndo() {
-  $('undoBtn').disabled = hIndex <= 0;
-  $('redoBtn').disabled = hIndex >= history.length - 1;
-}
-function clearWorld() {
-  tc.detach();
-  [...world.children].forEach((c) => { world.remove(c); disposeDeep(c); });
-}
-function disposeDeep(o) {
-  o.traverse((m) => {
-    if (m.geometry) m.geometry.dispose();
-    if (m.material) [].concat(m.material).forEach((mt) => mt.dispose());
-  });
-}
-function persist() {
-  try { localStorage.setItem(STORE_KEY, history[hIndex]); }
-  catch { /* sem armazenamento: a cena só não é lembrada */ }
-}
-function replaceWorld(objects) {
-  clearWorld();
-  objects.forEach((o) => world.add(o));
-  select(null);
-  commit();
-}
-
-/* ---------- ações ---------- */
-function duplicate() {
-  if (!selected) return;
-  const c = cloneDeep(selected);
-  c.name = nextName(selected.name.replace(/\s+\d+$/, ''));
-  c.position.x += snapOn ? 0.5 : 0.4;
-  world.add(c);
-  select(c);
-  commit();
-}
-function mirror() {
-  if (!selected) return;
-  const c = cloneDeep(selected);
-  c.name = `${selected.name} (espelho)`;
-  c.position.x = -selected.position.x;
-  c.rotation.y = -selected.rotation.y;
-  c.rotation.z = -selected.rotation.z;
-  if (Math.abs(selected.position.x) < 0.01) c.position.x += 1;
-  world.add(c);
-  select(c);
-  commit();
-  toast('Cópia espelhada do outro lado do eixo X');
-}
-function cloneDeep(obj) {
-  const c = obj.clone(true);
-  c.traverse((m) => {
-    if (m.geometry) m.geometry = m.geometry.clone();
-    if (m.material) m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone();
-  });
-  return c;
-}
-function removeSelected() {
-  if (!selected) return;
-  const o = selected;
-  select(null);
-  world.remove(o);
-  disposeDeep(o);
-  commit();
-}
-function focusOn(obj) {
-  const target = obj ?? world;
-  const box = new THREE.Box3().setFromObject(target);
-  if (box.isEmpty()) return;
-  const center = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3()).length();
-  const dist = (size / 2) / Math.tan((camera.fov * DEG) / 2) * 1.15;
-  const dir = camera.position.clone().sub(orbit.target).normalize();
-  orbit.target.copy(center);
-  camera.position.copy(center).addScaledVector(dir, Math.max(dist, 1.5));
-}
-const actions = {
-  duplicate, mirror, remove: removeSelected,
-  floor: () => { if (selected) { dropToFloor(selected); commit(); fillProps(); } },
-  focus: () => focusOn(selected),
-};
-document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => actions[b.dataset.act]()));
-
-/* ---------- ferramentas ---------- */
-let snapOn = true;
-function setMode(mode) {
-  tc.setMode(mode);
-  document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
-}
-function toggleSnap() {
-  snapOn = !snapOn;
-  tc.setTranslationSnap(snapOn ? 0.25 : null);
-  tc.setRotationSnap(snapOn ? 15 * DEG : null);
-  tc.setScaleSnap(snapOn ? 0.1 : null);
-  $('snapBtn').setAttribute('aria-pressed', String(snapOn));
-}
-document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
-$('snapBtn').addEventListener('click', toggleSnap);
-$('spaceBtn').addEventListener('click', () => {
-  const local = tc.space === 'world';
-  tc.setSpace(local ? 'local' : 'world');
-  $('spaceBtn').setAttribute('aria-pressed', String(local));
-});
-$('undoBtn').addEventListener('click', undo);
-$('redoBtn').addEventListener('click', redo);
-
-window.addEventListener('keydown', (e) => {
-  if (e.target.closest?.('input, textarea, select')) return;
-  const k = e.key.toLowerCase();
-  const mod = e.ctrlKey || e.metaKey;
-  if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
-  else if (mod && k === 'y') { e.preventDefault(); redo(); }
-  else if (mod && k === 'd') { e.preventDefault(); duplicate(); }
-  else if (mod) return;
-  else if (k === 'w') setMode('translate');
-  else if (k === 'e') setMode('rotate');
-  else if (k === 'r') setMode('scale');
-  else if (k === 'g') toggleSnap();
-  else if (k === 'm') mirror();
-  else if (k === 'f') focusOn(selected);
-  else if (k === 'delete' || k === 'backspace') { e.preventDefault(); removeSelected(); }
-  else if (k === 'escape') select(null);
-});
-
-/* ---------- painel de formas e lista da cena ---------- */
-$('shapes').innerHTML = Object.entries(SHAPES)
-  .map(([k, s]) => `<button type="button" class="shape" data-shape="${k}" title="Adicionar ${s.label.toLowerCase()}">${s.icon}${s.label}</button>`)
-  .join('');
-$('shapes').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-shape]');
-  if (b) addShape(b.dataset.shape);
-});
-
-const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>';
-const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3l18 18M10.6 5.6A9.6 9.6 0 0112 5.5c6.4 0 10 6.5 10 6.5a17 17 0 01-3.2 3.9M6.4 6.9C3.6 8.6 2 12 2 12s3.6 6.5 10 6.5c1.6 0 3-.4 4.2-1"/></svg>';
-function swatchOf(o) {
-  let c = '#888';
-  o.traverse((m) => { if (c === '#888' && m.material) c = '#' + [].concat(m.material)[0].color?.getHexString(); });
-  return c;
-}
-function esc(s) { return s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
-function renderOutliner() {
-  const items = world.children;
-  $('count').textContent = `${items.length} ${items.length === 1 ? 'objeto' : 'objetos'}`;
-  $('outlinerEmpty').hidden = items.length > 0;
-  $('outliner').innerHTML = items.map((o) => `
-    <li class="${o === selected ? 'sel' : ''} ${o.visible ? '' : 'off'}" data-id="${o.uuid}">
-      <button type="button" class="item"><i style="background:${swatchOf(o)}"></i><span>${esc(o.name || 'Objeto')}</span></button>
-      <button type="button" class="eye" title="${o.visible ? 'Ocultar' : 'Mostrar'}">${o.visible ? EYE : EYE_OFF}</button>
-    </li>`).join('');
-}
-$('outliner').addEventListener('click', (e) => {
-  const li = e.target.closest('li');
-  if (!li) return;
-  const o = world.children.find((c) => c.uuid === li.dataset.id);
-  if (!o) return;
-  if (e.target.closest('.eye')) {
-    o.visible = !o.visible;
-    if (!o.visible && o === selected) select(null);
-    commit();
-  } else {
-    select(o);
-  }
-});
-$('outliner').addEventListener('dblclick', (e) => {
-  const li = e.target.closest('li');
-  const o = li && world.children.find((c) => c.uuid === li.dataset.id);
-  if (o) focusOn(o);
-});
-
-/* ---------- propriedades ---------- */
-$('presets').innerHTML = PALETTE.map((c) => `<button type="button" style="background:${c}" data-color="${c}" title="${c}"></button>`).join('');
-
-const f = (id) => $(id);
-function meshesOf(o) { const out = []; o.traverse((m) => { if (m.isMesh) out.push(m); }); return out; }
-function materialsOf(o) { return meshesOf(o).flatMap((m) => [].concat(m.material)).filter((m) => m.color); }
-function baseSize(o) {
-  if (!o.isMesh) return null;
-  if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
-  const s = o.geometry.boundingBox.getSize(new THREE.Vector3());
-  return s.x > 1e-6 && s.y > 1e-6 && s.z > 1e-6 ? s : null;
-}
-function setVal(el, v) {
-  if (document.activeElement === el) return;
-  el.value = typeof v === 'number' ? String(Math.round(v * 1000) / 1000) : v;
-}
-function fillProps() {
-  const o = selected;
-  $('props').hidden = !o;
-  $('propsEmpty').hidden = !!o;
-  if (!o) return;
-  setVal(f('pName'), o.name);
-  setVal(f('pPx'), o.position.x); setVal(f('pPy'), o.position.y); setVal(f('pPz'), o.position.z);
-  setVal(f('pRx'), o.rotation.x / DEG); setVal(f('pRy'), o.rotation.y / DEG); setVal(f('pRz'), o.rotation.z / DEG);
-  const base = baseSize(o);
-  $('sizeLabel').textContent = base ? 'Tamanho (m)' : 'Escala (×)';
-  const s = base ? new THREE.Vector3().copy(base).multiply(o.scale) : o.scale;
-  setVal(f('pSx'), s.x); setVal(f('pSy'), s.y); setVal(f('pSz'), s.z);
-  const mat = materialsOf(o)[0];
-  if (mat) {
-    setVal(f('pColor'), '#' + mat.color.getHexString());
-    setVal(f('pMetal'), mat.metalness ?? 0); $('oMetal').value = (mat.metalness ?? 0).toFixed(2);
-    setVal(f('pRough'), mat.roughness ?? 1); $('oRough').value = (mat.roughness ?? 1).toFixed(2);
-    setVal(f('pOpacity'), mat.opacity); $('oOpacity').value = mat.opacity.toFixed(2);
-    f('pWire').checked = !!mat.wireframe;
-  }
-}
-const num = (id) => { const v = parseFloat(f(id).value); return Number.isFinite(v) ? v : 0; };
-
-function applyTransform() {
-  const o = selected;
-  if (!o) return;
-  o.position.set(num('pPx'), num('pPy'), num('pPz'));
-  o.rotation.set(num('pRx') * DEG, num('pRy') * DEG, num('pRz') * DEG);
-  const base = baseSize(o);
-  const sx = Math.max(0.001, num('pSx')), sy = Math.max(0.001, num('pSy')), sz = Math.max(0.001, num('pSz'));
-  if (base) o.scale.set(sx / base.x, sy / base.y, sz / base.z);
-  else o.scale.set(sx, sy, sz);
-  selBox.update();
-}
-function applyMaterial(patch) {
-  if (!selected) return;
-  materialsOf(selected).forEach((m) => {
-    if (patch.color) m.color.set(patch.color);
-    if (patch.metalness != null && 'metalness' in m) m.metalness = patch.metalness;
-    if (patch.roughness != null && 'roughness' in m) m.roughness = patch.roughness;
-    if (patch.opacity != null) { m.opacity = patch.opacity; m.transparent = patch.opacity < 1; m.depthWrite = patch.opacity >= 1; }
-    if (patch.wireframe != null) m.wireframe = patch.wireframe;
-    m.needsUpdate = true;
-  });
-}
-
-['pPx', 'pPy', 'pPz', 'pRx', 'pRy', 'pRz', 'pSx', 'pSy', 'pSz'].forEach((id) => {
-  f(id).addEventListener('input', applyTransform);
-  f(id).addEventListener('change', () => { applyTransform(); commit(); fillProps(); });
-});
-f('pName').addEventListener('input', () => { if (selected) { selected.name = f('pName').value; renderOutliner(); } });
-f('pName').addEventListener('change', commit);
-f('pColor').addEventListener('input', () => { applyMaterial({ color: f('pColor').value }); renderOutliner(); });
-f('pColor').addEventListener('change', commit);
-[['pMetal', 'metalness', 'oMetal'], ['pRough', 'roughness', 'oRough'], ['pOpacity', 'opacity', 'oOpacity']].forEach(([id, key, out]) => {
-  f(id).addEventListener('input', () => { const v = parseFloat(f(id).value); $(out).value = v.toFixed(2); applyMaterial({ [key]: v }); });
-  f(id).addEventListener('change', commit);
-});
-f('pWire').addEventListener('change', () => { applyMaterial({ wireframe: f('pWire').checked }); commit(); });
-$('presets').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-color]');
-  if (!b || !selected) return;
-  applyMaterial({ color: b.dataset.color });
-  commit();
-  fillProps();
-});
-$('props').addEventListener('submit', (e) => { e.preventDefault(); document.activeElement?.blur(); });
-
-/* ---------- arquivos ---------- */
-function download(blob, name) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  toast(`Arquivo gerado: ${name}`);
-}
-function withoutHelpers(fn) {
-  const hidden = [grid, tcHelper, selBox].filter((h) => h.visible);
-  hidden.forEach((h) => (h.visible = false));
-  try { return fn(); } finally { hidden.forEach((h) => (h.visible = true)); }
-}
-function requireObjects() {
-  if (world.children.length) return true;
-  toast('A cena está vazia. Adicione uma forma antes de exportar.');
-  return false;
-}
-const commands = {
-  new: () => { replaceWorld([]); toast('Cena nova. Use Ctrl+Z para voltar.'); },
-  example: () => { replaceWorld(buildExample()); focusOn(null); },
-  open: () => $('fileInput').click(),
-  save: () => download(new Blob([history[hIndex]], { type: 'application/json' }), 'modelo3d-projeto.json'),
-  glb: () => {
-    if (!requireObjects()) return;
-    new GLTFExporter().parse(world, (res) => download(new Blob([res], { type: 'model/gltf-binary' }), 'modelo3d.glb'),
-      (err) => toast('Não foi possível exportar o GLB: ' + err.message), { binary: true, onlyVisible: true });
-  },
-  stl: () => {
-    if (!requireObjects()) return;
-    world.updateMatrixWorld(true);
-    download(new Blob([new STLExporter().parse(world, { binary: true })], { type: 'model/stl' }), 'modelo3d.stl');
-  },
-  obj: () => {
-    if (!requireObjects()) return;
-    download(new Blob([new OBJExporter().parse(world)], { type: 'text/plain' }), 'modelo3d.obj');
-  },
-  png: () => {
-    const url = withoutHelpers(() => { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); });
-    fetch(url).then((r) => r.blob()).then((b) => download(b, 'modelo3d.png'));
-  },
-};
-const fileMenu = $('fileMenu');
-fileMenu.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-cmd]');
-  if (!b) return;
-  fileMenu.open = false;
-  commands[b.dataset.cmd]();
-});
-document.addEventListener('pointerdown', (e) => { if (!fileMenu.contains(e.target)) fileMenu.open = false; });
-
-$('fileInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (file) importFile(file);
-});
-
-async function importFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  const base = file.name.replace(/\.[^.]+$/, '');
-  try {
-    if (ext === 'json') {
-      const group = loader.parse(JSON.parse(await file.text()));
-      replaceWorld([...group.children]);
-      focusOn(null);
-      toast(`Projeto aberto: ${file.name}`);
-      return;
-    }
-    let obj;
-    if (ext === 'glb' || ext === 'gltf') {
-      const data = ext === 'glb' ? await file.arrayBuffer() : await file.text();
-      obj = await new Promise((res, rej) => new GLTFLoader().parse(data, '', (g) => res(g.scene), rej));
-    } else if (ext === 'obj') {
-      obj = new OBJLoader().parse(await file.text());
-      obj.traverse((m) => { if (m.isMesh) m.material = new THREE.MeshStandardMaterial({ color: '#c9ced6', roughness: 0.5 }); });
-    } else if (ext === 'stl') {
-      const geo = new STLLoader().parse(await file.arrayBuffer());
-      geo.center();
-      if (!geo.attributes.normal) geo.computeVertexNormals();
-      obj = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: '#c9ced6', roughness: 0.5, metalness: 0.1 }));
-    } else {
-      toast('Formato não suportado. Use .json, .glb, .gltf, .obj ou .stl.');
-      return;
-    }
-    obj.name = base;
-    obj.traverse((m) => { if (m.isMesh) m.castShadow = m.receiveShadow = true; });
-    // Ajusta modelos gigantes ou minúsculos para ~2 m.
-    const size = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
-    const max = Math.max(size.x, size.y, size.z);
-    if (max > 20 || max < 0.05) obj.scale.multiplyScalar(2 / max);
-    obj.position.set(orbit.target.x, 0, orbit.target.z);
-    world.add(obj);
-    dropToFloor(obj);
-    select(obj);
-    commit();
-    focusOn(obj);
-    toast(`Importado: ${file.name}`);
-  } catch (err) {
-    console.error(err);
-    toast(`Não foi possível ler ${file.name}. Arquivos .gltf com texturas externas precisam ser convertidos para .glb.`);
-  }
-}
-
-['dragenter', 'dragover'].forEach((t) => view.addEventListener(t, (e) => { e.preventDefault(); $('drop').hidden = false; }));
-['dragleave', 'drop'].forEach((t) => view.addEventListener(t, (e) => { e.preventDefault(); $('drop').hidden = true; }));
-view.addEventListener('drop', (e) => { const file = e.dataTransfer.files[0]; if (file) importFile(file); });
-
-let toastTimer;
-function toast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (t.hidden = true), 3200);
-}
-
-/* ---------- início ---------- */
-let saved = null;
-try { saved = localStorage.getItem(STORE_KEY); } catch { /* ignora */ }
-let started = false;
-if (saved) {
-  try {
-    const group = loader.parse(JSON.parse(saved));
-    [...group.children].forEach((c) => world.add(c));
-    started = true;
-  } catch { /* cena salva corrompida: usa o exemplo */ }
-}
-if (!started) buildExample().forEach((m) => world.add(m));
-commit();
-select(null);
-if (world.children.length) focusOn(null);
-</script>
+<script type="module" src="src/editor.js"></script>
 </body>
 </html>
