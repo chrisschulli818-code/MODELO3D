@@ -2,7 +2,7 @@
 
 Editor 3D que roda direto no navegador. Monte qualquer objeto combinando formas básicas, ajuste cor e material e exporte para impressão 3D, jogos ou outros programas.
 
-Abra o `index.html` num servidor estático (veja abaixo) ou publique a pasta no GitHub Pages.
+**Site:** https://chrisschulli818-code.github.io/MODELO3D/
 
 ## O que dá para fazer
 
